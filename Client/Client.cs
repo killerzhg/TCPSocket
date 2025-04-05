@@ -63,7 +63,7 @@ namespace Client
             }
         }
 
-        private static async Task OnConnected()
+        private static async void OnConnected()
         {
             if (_client.Connected)
             {
