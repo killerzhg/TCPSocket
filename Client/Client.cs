@@ -9,24 +9,22 @@ using System.Threading.Tasks;
 
 namespace Client
 {
-    class Client
+    class TCPClient 
     {
         private static TcpClient _client;
         private static NetworkStream _stream;
-        private static CancellationTokenSource _cancellationTokenSource;
         private static readonly string server = "127.0.0.1"; // 服务器地址
         private static readonly int port = 4782; // 服务器端口
+        // 连接成功回调
+        public event Action Connected;
+        // 断开连接回调
+        public event Action Disconnected;
+        // 消息接收回调
+        public event Action<string> MessageReceived;
 
-        static void Main(string[] args)
-        {
-            _cancellationTokenSource = new CancellationTokenSource();
-            Task.Run(() => ConnectAsync(_cancellationTokenSource.Token));
-            Console.ReadKey();
-            //通知取消所有SOCKET任务
-            _cancellationTokenSource.Cancel();
-        }
+        
 
-        private static async Task ConnectAsync(CancellationToken cancellationToken)
+        public async Task ConnectAsync(CancellationToken cancellationToken)
         {
             while (!cancellationToken.IsCancellationRequested)
             {
@@ -34,7 +32,7 @@ namespace Client
                 {
                     _client = new TcpClient();
                     await _client.ConnectAsync(server, port);
-                    OnConnected();
+                    Connected.Invoke();
                     _stream = _client.GetStream();
                     await ReceiveMessagesAsync(_stream, cancellationToken);
                 }
@@ -45,7 +43,7 @@ namespace Client
             }
         }
 
-        private static async Task ReceiveMessagesAsync(NetworkStream stream, CancellationToken cancellationToken)
+        private async Task ReceiveMessagesAsync(NetworkStream stream, CancellationToken cancellationToken)
         {
             byte[] buffer = new byte[256];
             int bytesRead;
@@ -54,16 +52,16 @@ namespace Client
                 while (!cancellationToken.IsCancellationRequested && (bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length, cancellationToken)) != 0)
                 {
                     string message = Encoding.UTF8.GetString(buffer, 0, bytesRead);
-                    OnMessageReceived(message);
+                    MessageReceived?.Invoke(message);
                 }
             }
             catch (IOException)
             {
-                OnDisconnected();
+                Disconnected.Invoke();
             }
         }
 
-        private static async void OnConnected()
+        public async void OnConnected()
         {
             if (_client.Connected)
             {
@@ -73,15 +71,34 @@ namespace Client
             }
         }
 
-        private static void OnDisconnected()
+        public void OnDisconnected()
         {
             Console.WriteLine($"{server}连接断开！");
             _client?.Close();
         }
 
-        private static void OnMessageReceived(string message)
+        public void OnMessageReceived(string message)
         {
-            Console.WriteLine("收到"+server+"消息: {0}", message);
+            Console.WriteLine("收到" + server + "消息: {0}", message);
         }
+    }
+    class Client
+    {
+        private static CancellationTokenSource _cancellationTokenSource;
+        static void Main(string[] args)
+        {
+            TCPClient tCPClient = new TCPClient();
+            _cancellationTokenSource = new CancellationTokenSource();
+            tCPClient.Connected += tCPClient.OnConnected;
+            tCPClient.Disconnected += tCPClient.OnDisconnected;
+            tCPClient.MessageReceived += tCPClient.OnMessageReceived;
+
+            Task.Run(() => tCPClient.ConnectAsync(_cancellationTokenSource.Token));
+            Console.ReadKey();
+            //通知取消所有SOCKET任务
+            _cancellationTokenSource.Cancel();
+        }
+
+
     }
 }
