@@ -5,91 +5,6 @@ using TcpClientLibrary;
 
 namespace TcpClientDemo
 {
-    // 自定义TCP客户端，继承自TcpClientBase
-    public class CustomTcpClient : TcpClientBase
-    {
-        // 可以添加自定义属性
-        public string ClientId { get; }
-
-        // 自定义构造函数
-        public CustomTcpClient(string serverIp, int serverPort, string clientId)
-            : base(serverIp, serverPort)
-        {
-            ClientId = clientId;
-        }
-
-        // 重写连接成功处理方法
-        protected override void OnConnected()
-        {
-            Console.WriteLine($"客户端 {ClientId} 已连接到服务器 {ServerIp}:{ServerPort}");
-
-            // 发送客户端标识
-            try
-            {
-                Task.Run(async () =>
-                {
-                    await Task.Delay(500); // 稍微延迟，确保连接稳定
-                    await SendMessageAsync($"CLIENT_ID:{ClientId}");
-                });
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"发送客户端ID时出错: {ex.Message}");
-            }
-
-            // 调用基类方法，确保事件被触发
-            base.OnConnected();
-        }
-
-        // 重写断开连接处理方法
-        protected override void OnDisconnected()
-        {
-            Console.WriteLine($"客户端 {ClientId} 已断开与服务器的连接");
-
-            // 调用基类方法，确保事件被触发
-            base.OnDisconnected();
-        }
-
-        // 重写消息接收处理方法
-        protected override void OnMessageReceived(string message)
-        {
-            Console.WriteLine($"客户端 {ClientId} 收到消息: {message}");
-
-            // 处理特殊消息
-            if (message.StartsWith("PING"))
-            {
-                try
-                {
-                    Task.Run(async () => await SendMessageAsync("PONG"));
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"回复PING消息时出错: {ex.Message}");
-                }
-            }
-
-            // 调用基类方法，确保事件被触发
-            base.OnMessageReceived(message);
-        }
-
-        // 重写发送数据后的处理方法
-        protected override void OnAfterSendData(byte[] data)
-        {
-            string message = Encoding.UTF8.GetString(data);
-            Console.WriteLine($"客户端 {ClientId} 已发送: {message}");
-        }
-
-        // 重写处理接收数据的方法，可以实现自定义协议解析
-        protected override void ProcessReceivedData(byte[] data, int length)
-        {
-            // 可以在这里实现自定义协议解析
-            // 例如：处理二进制协议、处理粘包问题等
-
-            // 这个简单示例中，我们只是将数据转换为字符串并调用基类方法
-            base.ProcessReceivedData(data, length);
-        }
-    }
-
     // 使用自定义TCP客户端的示例程序
     class Program
     {
@@ -159,6 +74,81 @@ namespace TcpClientDemo
             }
 
             Console.WriteLine("程序已退出");
+        }
+    }
+
+    public class CustomTcpClient : TcpClientBase
+    {
+        // 可以添加自定义属性
+        public string ClientId { get; }
+
+        // 自定义构造函数
+        public CustomTcpClient(string serverIp, int serverPort, string clientId)
+            : base(serverIp, serverPort)
+        {
+            ClientId = clientId;
+        }
+
+        // 重写连接成功处理方法
+        protected override void OnConnected()
+        {
+            Console.WriteLine($"客户端 {ClientId} 已连接到服务器 {ServerIp}:{ServerPort}");
+
+            // 发送客户端标识
+            try
+            {
+                Task.Run(async () =>
+                {
+                    await Task.Delay(500); // 稍微延迟，确保连接稳定
+                    await SendMessageAsync($"CLIENT_ID:{ClientId}");
+                });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"发送客户端ID时出错: {ex.Message}");
+            }
+
+            // 调用基类方法，确保事件被触发
+            base.OnConnected();
+        }
+
+        // 重写断开连接处理方法
+        protected override void OnDisconnected()
+        {
+            Console.WriteLine($"客户端 {ClientId} 已断开与服务器的连接");
+
+            // 调用基类方法，确保事件被触发
+            base.OnDisconnected();
+        }
+
+        // 重写发送数据后的处理方法
+        protected override void OnAfterSendData(byte[] data)
+        {
+            string message = Encoding.UTF8.GetString(data);
+            Console.WriteLine($"客户端 {ClientId} 已发送: {message}");
+        }
+
+        // 处理接收数据
+        protected override void ProcessReceivedData(byte[] data, int length)
+        {
+            string message = Encoding.UTF8.GetString(data, 0, length);
+            Console.WriteLine($"客户端 {ClientId} 收到消息: {message}");
+
+            // 处理特殊消息
+            if (message.StartsWith("PING"))
+            {
+                try
+                {
+                    Task.Run(async () => await SendMessageAsync("PONG"));
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"回复PING消息时出错: {ex.Message}");
+                }
+            }
+
+            // 这个简单示例中，我们只是将数据转换为字符串并调用基类方法
+            base.ProcessReceivedData(data, length);
         }
     }
 }

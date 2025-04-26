@@ -73,11 +73,6 @@ namespace TcpClientLibrary
         public event EventHandler Disconnected;
 
         /// <summary>
-        /// 接收到消息时触发
-        /// </summary>
-        public event EventHandler<MessageReceivedEventArgs> MessageReceived;
-
-        /// <summary>
         /// 发生错误时触发
         /// </summary>
         public event EventHandler<ErrorEventArgs> ErrorOccurred;
@@ -267,8 +262,7 @@ namespace TcpClientLibrary
         /// <param name="length">数据长度</param>
         protected virtual void ProcessReceivedData(byte[] data, int length)
         {
-            string message = Encoding.UTF8.GetString(data, 0, length);
-            OnMessageReceived(message);
+
         }
 
         /// <summary>
@@ -285,15 +279,6 @@ namespace TcpClientLibrary
         protected virtual void OnDisconnected()
         {
             Disconnected?.Invoke(this, EventArgs.Empty);
-        }
-
-        /// <summary>
-        /// 接收到消息后调用，供子类重写
-        /// </summary>
-        /// <param name="message">接收到的消息</param>
-        protected virtual void OnMessageReceived(string message)
-        {
-            MessageReceived?.Invoke(this, new MessageReceivedEventArgs(message));
         }
 
         /// <summary>
@@ -447,26 +432,6 @@ namespace TcpClientLibrary
         }
 
         #endregion
-    }
-
-    /// <summary>
-    /// 消息接收事件参数
-    /// </summary>
-    public class MessageReceivedEventArgs : EventArgs
-    {
-        /// <summary>
-        /// 获取接收到的消息
-        /// </summary>
-        public string Message { get; }
-
-        /// <summary>
-        /// 初始化消息接收事件参数
-        /// </summary>
-        /// <param name="message">接收到的消息</param>
-        public MessageReceivedEventArgs(string message)
-        {
-            Message = message;
-        }
     }
 
     /// <summary>
