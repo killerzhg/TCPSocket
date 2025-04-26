@@ -22,9 +22,7 @@ namespace Client
         // 消息接收回调
         public event Action<string> MessageReceived;
 
-        
-
-        public async Task ConnectAsync(CancellationToken cancellationToken)
+        public async Task StartConnectAsync(CancellationToken cancellationToken)
         {
             while (!cancellationToken.IsCancellationRequested)
             {
@@ -32,7 +30,7 @@ namespace Client
                 {
                     _client = new TcpClient();
                     await _client.ConnectAsync(server, port);
-                    Connected.Invoke();
+                    Connected?.Invoke();
                     _stream = _client.GetStream();
                     await ReceiveMessagesAsync(_stream, cancellationToken);
                 }
@@ -57,7 +55,7 @@ namespace Client
             }
             catch (IOException)
             {
-                Disconnected.Invoke();
+                Disconnected?.Invoke();
             }
         }
 
@@ -93,7 +91,7 @@ namespace Client
             tCPClient.Disconnected += tCPClient.OnDisconnected;
             tCPClient.MessageReceived += tCPClient.OnMessageReceived;
 
-            Task.Run(() => tCPClient.ConnectAsync(_cancellationTokenSource.Token));
+            Task.Run(() => tCPClient.StartConnectAsync(_cancellationTokenSource.Token));
             Console.ReadKey();
             //通知取消所有SOCKET任务
             _cancellationTokenSource.Cancel();
